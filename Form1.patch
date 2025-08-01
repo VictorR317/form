@@ -1,0 +1,71 @@
+*** Form1.cs.orig   2025-07-31 10:00:00.000000000 -0500
+--- Form1.cs        2025-07-31 10:05:00.000000000 -0500
+@@
+-    public partial class Form1 : Form
++    public partial class Form1 : Form
+     {
+@@
+-        public Form1()
+-        {
+-            InitializeComponent();
+-            base.Load += this.Form1_Load;
+-        }
++        // Campos para login/licencia
++        private readonly string loggedUser;
++        private readonly int loggedUserId;
++        private readonly LicenseService licenseService;
++
++        // Constructor modificado para login/licencia
++        public Form1(string username, int userId)
++        {
++            InitializeComponent();
++            loggedUser = username;
++            loggedUserId = userId;
++            var db = new Database();
++            licenseService = new LicenseService(db);
++            this.Load += this.Form1_Load;
++        }
+@@
+-       private async void Form1_Load(object sender, EventArgs e)
++        private async void Form1_Load(object sender, EventArgs e)
+         {
+-            // Firebase y permisos antiguos eliminados aquí
++            // >>> Inicia integración login/licencia <<<
++            lblWelcome.Text = $"Welcome, {loggedUser}!";
++            var (type, expiration, days) = licenseService.GetLicenseInfo(loggedUserId);
++            if (type != "None")
++            {
++                lblLicense.Text = $"License: {type}";
++                lblExpiration.Text = $"Expires: {expiration:yyyy-MM-dd}";
++                lblDays.Text = $"Days Remaining: {days}";
++                if (days <= 0)
++                    MessageBox.Show("License expired! Some features will be disabled.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
++            }
++            else
++            {
++                lblLicense.Text = "License: Not found";
++                lblExpiration.Text = "Expires: N/A";
++                lblDays.Text = "Days Remaining: 0";
++            }
++            btnRestrictedFeature.Enabled = days > 0;
++            // >>> Fin integración <<<
+             
+-            // Aquí continúa tu lógica original...
++            // Continúa tu lógica original (ADB, COM, etc.)
+         }
+@@
++        // --- Métodos de sesión/licencia ---
++        private void btnLogout_Click(object sender, EventArgs e)
++        {
++            if (MessageBox.Show("Do you want to logout?", "Logout", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
++            {
++                SessionManager.ClearSession();
++                Application.Restart();
++            }
++        }
++
++        private void btnRestrictedFeature_Click(object sender, EventArgs e)
++        {
++            MessageBox.Show("This is a feature available only with a valid license.", "Feature Locked", MessageBoxButtons.OK, MessageBoxIcon.Information);
++        }
+*** End of patch
